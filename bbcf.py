@@ -40,6 +40,8 @@ P1Control = 0x891A08
 P2Control = P1Control + 0x20
 CPU_diff  = 0x8F85F4
 CPU_slide = 0xE9A57C
+P1Jubei   = 0xE3F97C
+P2Jubei   = 0xE3F980
 
 # Get BBCF process
 rwm = ReadWriteMemory()
@@ -71,6 +73,9 @@ global_p1 = get_value_from_address(process, base_address + P1Control)
 global_p2 = get_value_from_address(process, base_address + P2Control)
 global_diff = get_value_from_address(process, base_address + CPU_diff)
 global_slide = get_value_from_address(process, base_address + CPU_slide)
+global_jubei = 35
+jubei_setter1 = False
+jubei_setter2 = False
 thread_runner = True
 thread_interval = 0.1
 
@@ -94,12 +99,24 @@ def func_slide():
     while thread_runner:
         set_value_at_address(process, base_address + CPU_slide, global_slide)
         time.sleep(thread_interval)
+		
+def func_jubei1():
+    while thread_runner:
+        while jubei_setter1:
+            set_value_at_address(process, base_address + P1Jubei, global_jubei)
+            
+def func_jubei2():
+    while thread_runner:
+        while jubei_setter2:
+            set_value_at_address(process, base_address + P2Jubei, global_jubei)
 
 thread_p1 = Thread(target = func_p1)
 thread_p2 = Thread(target = func_p2)
 thread_diff = Thread(target = func_diff)
 thread_slide = Thread(target = func_slide)
-threads = [thread_p1, thread_p2, thread_diff, thread_slide]
+thread_jubei1 = Thread(target = func_jubei1)
+thread_jubei2 = Thread(target = func_jubei2)
+threads = [thread_p1, thread_p2, thread_diff, thread_slide, thread_jubei1, thread_jubei2]
 for t in threads:
     t.setDaemon(True)
     t.start()
@@ -123,6 +140,9 @@ while b:
     E) Difficulty: {difficulty_status}/5
     R) GUI slider: {slider_status}/5
     
+    A) P1 Jubei: {'ON' if jubei_setter1 else 'OFF'}
+    S) P2 Jubei: {'ON' if jubei_setter2 else 'OFF'}
+    
     Z) Exit
 """)
     key = input()
@@ -138,9 +158,15 @@ while b:
     elif key == 'R' or key == 'r':
         global_slide = (difficulty_status + 1) % 6
         #set_value_at_address(process, base_address+CPU_slide, v)
+    elif key == 'A' or key == 'a':
+	    jubei_setter1 = not jubei_setter1
+    elif key == 'S' or key == 's':
+	    jubei_setter2 = not jubei_setter2
     elif key == 'Z' or key == 'z':
         process.close()
         b = False
+        jubei_setter1 = False
+        jubei_setter2 = False
         thread_runner = False
         for t in threads:
             t.join()
