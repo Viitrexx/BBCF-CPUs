@@ -1,5 +1,48 @@
 # Made by Vii for WAVE
-# Updated 2023-02-01
+# Updated 2024-03-01
+
+# Balance dictionary
+chars = {
+  #                  v-- Leave at 0 to not change
+  # ID: (Name, new maximum HP, original maximum HP)
+  #                                       ^-- Please do not touch
+     0: ("Ragna", 0, 10_000),
+     1: ("Jin", 0, 11_000),
+     2: ("Noel", 0, 11_000),
+     3: ("Rachel", 0, 11_000),
+     4: ("Taokaka", 0, 10_000),
+     5: ("Tager", 0, 13_000),
+     6: ("Litchi", 0, 11_000),
+     7: ("Arakune", 0, 10_500),
+     8: ("Bang", 0, 11_500),
+     9: ("Carl", 0, 10_000),
+    10: ("Hakumen", 0, 12_000),
+    11: ("Nu-13", 0, 10_000),
+    12: ("Tsubaki", 0, 11_000),
+    13: ("Hazama", 0, 11_000),
+    14: ("Mu-12", 0, 10_000),
+    15: ("Makoto", 0, 11_000),
+    16: ("Valkenhayn", 0, 11_500),
+    17: ("Platinum", 0, 11_000),
+    18: ("Relius", 0, 11_000),
+    19: ("Izayoi", 0, 11_000),
+    20: ("Amane", 0, 10_500),
+    21: ("Bullet", 0, 11_500),
+    22: ("Azrael", 0, 12_000),
+    23: ("Kagura", 0, 11_500),
+    24: ("Kokonoe", 0, 10_500),
+    25: ("Terumi", 0, 10_500),
+    26: ("Celica", 0, 10_000),
+    27: ("Lambda-11", 0, 10_500),
+    28: ("Hibiki", 0, 11_000),
+    29: ("Nine", 0, 10_500),
+    30: ("Naoto", 0, 11_500),
+    31: ("Izanami", 0, 10_500),
+    32: ("Susanoo", 0, 12_500),
+    33: ("Es", 0, 10_500),
+    34: ("Mai", 0, 11_000),
+    35: ("Jubei", 0, 11_000),
+}
 
 import os
 from ReadWriteMemory import ReadWriteMemory
@@ -42,6 +85,14 @@ CPU_diff  = 0x8F85F4
 CPU_slide = 0xE9A57C
 P1Jubei   = 0xE3F97C
 P2Jubei   = 0xE3F980
+P1Char    = 0x8919F8
+P2Char    = P1Char + 0x20
+P1HPCurr  = 0x892998 
+P2HPCurr  = 0x89299C
+HPOffsetC = 0x9D4
+P1HPMax   = 0xE3A9E0
+P2HPMax   = 0xE3A9E4
+HPOffsetM = 0x9D8
 
 # Get BBCF process
 rwm = ReadWriteMemory()
@@ -57,12 +108,12 @@ while not_found:
         time.sleep(10)
 process.open()
 
-def get_value_from_address(process, address):
-    pointer = process.get_pointer(address)
+def get_value_from_address(process, address, offsets=[]):
+    pointer = process.get_pointer(address, offsets=offsets)
     return process.read(pointer)
 
-def set_value_at_address(process, address, value):
-    pointer = process.get_pointer(address)
+def set_value_at_address(process, address, value, offsets=[]):
+    pointer = process.get_pointer(address, offsets=offsets)
     process.write(pointer, value)
 
 def cls():
@@ -109,6 +160,28 @@ def func_jubei2():
     while thread_runner:
         while jubei_setter2:
             set_value_at_address(process, base_address + P2Jubei, global_jubei)
+        
+def func_hp1():
+    while thread_runner:
+        char_p1 = get_value_from_address(process, base_address + P1Char)
+        _, target_hp, max_hp = chars[char_p1]
+        if target_hp != 0:
+            current_hp = get_value_from_address(process, base_address + P1HPCurr, offsets=[HPOffsetC])
+            if current_hp == max_hp:
+                set_value_at_address(process, base_address + P1HPMax, target_hp, offsets=[HPOffsetM])
+                set_value_at_address(process, base_address + P1HPCurr, target_hp, offsets=[HPOffsetC])
+        time.sleep(thread_interval)
+
+def func_hp2():
+    while thread_runner:
+        char_p2 = get_value_from_address(process, base_address + P2Char)
+        _, target_hp, max_hp = chars[char_p2]
+        if target_hp != 0:
+            current_hp = get_value_from_address(process, base_address + P2HPCurr, offsets=[HPOffsetC])
+            if current_hp == max_hp:
+                set_value_at_address(process, base_address + P2HPMax, target_hp, offsets=[HPOffsetM])
+                set_value_at_address(process, base_address + P2HPCurr, target_hp, offsets=[HPOffsetC])
+        time.sleep(thread_interval)
 
 thread_p1 = Thread(target = func_p1)
 thread_p2 = Thread(target = func_p2)
@@ -116,7 +189,9 @@ thread_diff = Thread(target = func_diff)
 thread_slide = Thread(target = func_slide)
 thread_jubei1 = Thread(target = func_jubei1)
 thread_jubei2 = Thread(target = func_jubei2)
-threads = [thread_p1, thread_p2, thread_diff, thread_slide, thread_jubei1, thread_jubei2]
+thread_hp1 = Thread(target = func_hp1)
+thread_hp2 = Thread(target = func_hp2)
+threads = [thread_p1, thread_p2, thread_diff, thread_slide, thread_jubei1, thread_jubei2, thread_hp1, thread_hp2]
 for t in threads:
     t.setDaemon(True)
     t.start()
