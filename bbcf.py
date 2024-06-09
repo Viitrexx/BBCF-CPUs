@@ -1,5 +1,5 @@
 # Made by Vii for WAVE
-# Updated 2024-03-01
+# Updated 2024-06-09
 
 # Balance dictionary
 chars = {
@@ -164,10 +164,10 @@ def func_jubei2():
 def func_hp1():
     while thread_runner:
         char_p1 = get_value_from_address(process, base_address + P1Char)
-        _, target_hp, max_hp = chars[char_p1]
+        _, target_hp, _ = chars[char_p1]
         if target_hp != 0:
-            current_hp = get_value_from_address(process, base_address + P1HPCurr, offsets=[HPOffsetC])
-            if current_hp == max_hp:
+            curr_max_hp = get_value_from_address(process, base_address + P1HPMax, offsets=[HPOffsetM])
+            if curr_max_hp != target_hp:
                 set_value_at_address(process, base_address + P1HPMax, target_hp, offsets=[HPOffsetM])
                 set_value_at_address(process, base_address + P1HPCurr, target_hp, offsets=[HPOffsetC])
         time.sleep(thread_interval)
@@ -175,10 +175,10 @@ def func_hp1():
 def func_hp2():
     while thread_runner:
         char_p2 = get_value_from_address(process, base_address + P2Char)
-        _, target_hp, max_hp = chars[char_p2]
+        _, target_hp, _ = chars[char_p2]
         if target_hp != 0:
-            current_hp = get_value_from_address(process, base_address + P2HPCurr, offsets=[HPOffsetC])
-            if current_hp == max_hp:
+            curr_max_hp = get_value_from_address(process, base_address + P2HPMax, offsets=[HPOffsetM])
+            if curr_max_hp != target_hp:
                 set_value_at_address(process, base_address + P2HPMax, target_hp, offsets=[HPOffsetM])
                 set_value_at_address(process, base_address + P2HPCurr, target_hp, offsets=[HPOffsetC])
         time.sleep(thread_interval)
